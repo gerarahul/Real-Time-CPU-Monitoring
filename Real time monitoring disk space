@@ -33,3 +33,5 @@ fi
 
 # Remove the temporary file
 rm -f /tmp/disk_usage.txt
+
+# END #
