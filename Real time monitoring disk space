@@ -1,0 +1,35 @@
+#!/bin/bash
+# Purpose: Real time 
+# Version: 1.0
+# Created Date:  Mon Mar 09 10:06:20 IST 2023
+# Modified Date: Mar 13 2023
+# Author: Rahul Gera
+# START #
+
+
+# Set the disk usage threshold
+THRESHOLD=40
+
+# Set the recipient email address
+MAILTO="root"
+
+# Get the hostname
+HOSTNAME=$(hostname)
+
+# Check the disk usage for each partition
+for USAGE in $(df -h | awk '{print $5}' | sed 's/%//g' | tail -n +2); do
+  # If disk usage is above the threshold, save it to a temporary file
+  if [ $USAGE -ge $THRESHOLD ]; then
+    df -h | grep "$USAGE%" >> /tmp/disk_usage.txt
+  fi
+done
+
+# Check if there is any partition with disk usage above the threshold
+VALUE=$(cat /tmp/disk_usage.txt | wc -l)
+if [ $VALUE -ge 1 ]; then
+  # Send an email with the disk usage details
+  mail -s "$HOSTNAME Disk Usage is Critical" $MAILTO < /tmp/disk_usage.txt
+fi
+
+# Remove the temporary file
+rm -f /tmp/disk_usage.txt
