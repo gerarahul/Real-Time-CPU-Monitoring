@@ -1,0 +1,62 @@
+#!/bin/bash
+# Purpose: Real time CPU utilization Monitoring
+# Version: 1.0
+# Created Date:  Mon Mar 12 10:06:20 IST 2023
+# Modified Date: Mar 13 2023
+# Author: Rahul Gera
+# START #
+
+
+# Define the path(s) to monitor
+PATHS="/"
+
+# Get the hostname of the system
+HOSTNAME=$(hostname)
+
+# Define the warning and critical CPU utilization thresholds
+CRITICAL=98
+WARNING=90
+
+# Define the email addresses to use for critical and warning alerts
+CRITICALMail="YOUREMAILaddress@Domain.com"
+MAILWAR="YOUREMAIL@Domain.in"
+
+# Create a directory to store the log files
+mkdir -p /var/log/cputilhist
+
+# Create a log file with the current date in its name
+LOGFILE=/var/log/cputilhist/cpusage-$(date +%h%d%y).log
+touch $LOGFILE
+
+# Loop through each defined path and check CPU utilization
+for path in $PATHS
+do
+  # Get the current CPU utilization
+  CPULOAD=$(top -b -n 2 -d1 | grep "Cpu(s)" | tail -n1 | awk '{print $2}' | awk -F. '{print $1}')
+
+  # Check if both warning and critical thresholds are defined
+  if [ -n "$WARNING" -a -n "$CRITICAL" ]; then
+
+    # Check if CPU utilization is within the warning threshold
+    if [ "$CPULOAD" -ge "$WARNING" -a "$CPULOAD" -lt "$CRITICAL" ]; then
+      # Log the warning and send a warning alert email
+      echo "$(date "+%F %H:%M:%S") WARNING $CPULOAD on Host $HOSTNAME" >> $LOGFILE
+      echo "Warning Cpuload $CPULOAD Host is $HOSTNAME" | mail -s "CPULOAD is Warning" $MAILWAR
+      exit 1
+
+    # Check if CPU utilization is within the critical threshold
+    elif [ "$CPULOAD" -ge "$CRITICAL" ]; then
+      # Log the critical error and send a critical alert email
+      echo "$(date "+%F %H:%M:%S") CRITICAL $CPULOAD on Host $HOSTNAME" >> $LOGFILE
+      echo "CRITICAL Cpuload $CPULOAD Host is $HOSTNAME" | mail -s "CPULOAD is CRITICAL" $CRITICALMail
+      exit 2
+
+    # If CPU utilization is below the warning threshold, log that everything is okay
+    else
+      echo "$(date "+%F %H:%M:%S") OK $CPULOAD on $HOSTNAME" >> $LOGFILE
+      exit 0
+    fi
+  fi
+done
+
+# END #
